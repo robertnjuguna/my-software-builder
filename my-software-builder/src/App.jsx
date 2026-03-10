@@ -55,20 +55,17 @@ const PHASES = [
 ];
 
 async function callAPI(systemMsg, userMsg, signal, onChunk) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const key = import.meta.env.VITE_GEMINI_API_KEY;
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=" + key;
+
+  const res = await fetch(url, {
     method: "POST",
     signal,
-    headers: {
-      "Content-Type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true",
-      "x-api-key": import.meta.env.VITE_ANTHROPIC_API,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      stream: true,
-      system: systemMsg,
-      messages: [{ role: "user", content: userMsg }],
+      system_instruction: { parts: [{ text: systemMsg }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: 8192, temperature: 0.2 },
     }),
   });
 
@@ -91,10 +88,10 @@ async function callAPI(systemMsg, userMsg, signal, onChunk) {
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
         const raw = line.slice(6).trim();
-        if (raw === "[DONE]") return;
+        if (!raw || raw === "[DONE]") continue;
         try {
           const j = JSON.parse(raw);
-          const t = j?.delta?.text || "";
+          const t = j?.candidates?.[0]?.content?.parts?.[0]?.text || "";
           if (t) onChunk(t);
         } catch (_) {}
       }
