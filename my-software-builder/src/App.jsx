@@ -61,6 +61,7 @@ async function callAPI(systemMsg, userMsg, signal, onChunk) {
     headers: {
       "Content-Type": "application/json",
       "anthropic-dangerous-direct-browser-access": "true",
+      "x-api-key": import.meta.env.VITE_ANTHROPIC_API,
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
